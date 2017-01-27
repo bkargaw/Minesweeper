@@ -21,7 +21,7 @@ class Board
     grid.each.with_index do |row, i|
       row.each.with_index do |tile, j|
         next if tile.is_a_bomb
-        tile.bomb_count = count_bombs
+        tile.bomb_count = count_bombs([i, j])
       end
     end
   end
@@ -34,19 +34,16 @@ class Board
 
   def get_my_neighbor_positions(pos)
     positions = []
-
     i, j = pos
-    (i-1..i+1).each do |i2|
-      (j-1..j+1).each do |j2|
+    (i - 1..i + 1).each do |i2|
+      (j - 1..j + 1).each do |j2|
         positions << [i2, j2] unless [i2, j2] == pos
       end
     end
     positions.select do |i3, j3|
-      i3.between?(0, size - 1) && j3.between? (0, size - 1)
+      i3.between?(0, size - 1) && j3.between?(0, size - 1)
     end
   end
-
-
 
   def [](pos)
     x, y = pos
@@ -59,7 +56,7 @@ class Board
   end
 
   def won?
-    grid.flatten.select { |tile| !tile.revealed && !tile.is_a_bomb}.empty?
+    grid.flatten.select { |tile| !tile.revealed && !tile.is_a_bomb }.empty?
   end
 
   def game_over?(pos)
@@ -69,12 +66,19 @@ class Board
   def render
     display = grid.flatten.map do |tile|
       if tile.revealed
-        tile.bomb_count.zero? ? " " : "#{tile.bomb_count}"
+        tile.bomb_count.zero? ? " " : tile.bomb_count.to_s
       else
         "*"
       end
     end
-    display.each_slice(size).to_a.each{|row| p row.join(" ")}
+    display.each_slice(size).to_a.each { |row| p row.join(" ") }
+  end
+
+  def reveal(pos)
+    self[pos].reveal if self[pos].bomb_count != 0
+    get_my_neighbors_to_revert = get_my_neighbor_positions
+    get_my_neighbors_to_revert.reject { |i| self[i].bomb_count != 0 }
+    get_my_neighbors_to_revert(pos).map { |j| reveal(j) }
   end
 
 end
