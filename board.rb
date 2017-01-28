@@ -1,4 +1,5 @@
 require_relative 'tile'
+require 'colorize'
 
 class Board
   attr_reader :size, :bomb_count, :grid
@@ -22,17 +23,18 @@ class Board
       row.each.with_index do |tile, j|
         next if tile.is_a_bomb
         tile.bomb_count = count_bombs([i, j])
+        tile.update_if_fring
       end
     end
   end
 
-  def count_bombs
-    get_my_neighbor_positions([i, j]).select do |pos|
-      board[pos].is_a_bomb
+  def count_bombs(location)
+    get_my_neighbor_pos(location).select do |pos|
+      self[pos].is_a_bomb
     end.count
   end
 
-  def get_my_neighbor_positions(pos)
+  def get_my_neighbor_pos(pos)
     positions = []
     i, j = pos
     (i - 1..i + 1).each do |i2|
@@ -66,19 +68,37 @@ class Board
   def render
     display = grid.flatten.map do |tile|
       if tile.revealed
-        tile.bomb_count.zero? ? " " : tile.bomb_count.to_s
+        if tile.is_a_bomb
+          "@" # bomb
+        else
+          tile.bomb_count.zero? ? "*" : " #{tile.bomb_count} "
+        end
       else
-        "*"
+        tile.flaged ? "F" : "_"
       end
     end
-    display.each_slice(size).to_a.each { |row| p row.join(" ") }
+    display.each_slice(size).to_a.each { |row| p row.join("") }
   end
 
+  require 'byebug'
+
   def reveal(pos)
-    self[pos].reveal if self[pos].bomb_count != 0
-    get_my_neighbors_to_revert = get_my_neighbor_positions
-    get_my_neighbors_to_revert.reject { |i| self[i].bomb_count != 0 }
-    get_my_neighbors_to_revert(pos).map { |j| reveal(j) }
+    tile = self[pos]
+    unless tile.revealed || tile.is_a_bomb || tile.flaged
+      tile.reveal
+      unless tile.is_fring
+        get_my_neighbor_pos(pos).map { |other_tile| reveal(other_tile) }
+      end
+    end
+  end
+
+  def reavel_when_game_lose
+    grid.each { |row| row.each(&:reveal) }
+  end
+
+  def change_flag(pos)
+    tile = self[pos]
+    tile.change_flag unless revealed
   end
 
 end
