@@ -69,15 +69,25 @@ class Board
     display = grid.flatten.map do |tile|
       if tile.revealed
         if tile.is_a_bomb
-          "@" # bomb
+          "@".red # bomb
         else
-          tile.bomb_count.zero? ? "*" : " #{tile.bomb_count} "
+          tile.bomb_count.zero? ? "*".light_black : tile.bomb_count.to_s.yellow
         end
       else
-        tile.flaged ? "F" : "_"
+        tile.flaged ? "F".cyan : "-"
       end
     end
-    display.each_slice(size).to_a.each { |row| p row.join("") }
+    display_this(display)
+  end
+
+  def display_this(display)
+    puts " #{[*0...size].join(" ")}"
+    display.each_slice(size).to_a.each_with_index do |row, row_idx|
+      print row_idx.to_s
+      row.each_with_index do  |el, el_idx|
+        el_idx + 1 != size ?  print("#{el} ") : puts("#{el} ")
+      end
+    end
   end
 
   require 'byebug'
@@ -90,6 +100,8 @@ class Board
         get_my_neighbor_pos(pos).map { |other_tile| reveal(other_tile) }
       end
     end
+
+    tile
   end
 
   def reavel_when_game_lose
@@ -98,7 +110,7 @@ class Board
 
   def change_flag(pos)
     tile = self[pos]
-    tile.change_flag unless revealed
+    tile.change_flag unless tile.revealed
   end
 
 end
